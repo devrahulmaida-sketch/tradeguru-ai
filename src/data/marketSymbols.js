@@ -1,0 +1,80 @@
+export const INSTRUMENTS = [
+  {
+    id: "NIFTY50",
+    name: "NIFTY 50",
+    exchange: "NSE",
+    type: "Index / Options",
+    basePrice: 24850.00,
+    lotSize: 25,
+    tickSize: 0.05,
+    volatility: 0.0018,
+    currency: "₹",
+    category: "Indices",
+    description: "National Stock Exchange Benchmark Index - 50 largest Indian blue-chip companies"
+  },
+  {
+    id: "BANKNIFTY",
+    name: "BANK NIFTY",
+    exchange: "NSE",
+    type: "Index / Options",
+    basePrice: 51240.00,
+    lotSize: 15,
+    tickSize: 0.05,
+    volatility: 0.0028,
+    currency: "₹",
+    category: "Indices",
+    description: "Banking Sector Benchmark Index - High volatility & institutional momentum"
+  },
+  {
+    id: "RELIANCE",
+    name: "RELIANCE IND.",
+    exchange: "NSE",
+    type: "Equity / Futures",
+    basePrice: 2985.50,
+    lotSize: 250,
+    tickSize: 0.05,
+    volatility: 0.0015,
+    currency: "₹",
+    category: "Equities",
+    description: "India's highest market-cap heavyweight (Oil & Gas, Retail, Telecom)"
+  },
+  {
+    id: "HDFCBANK",
+    name: "HDFC BANK",
+    exchange: "NSE",
+    type: "Equity / Futures",
+    basePrice: 1642.80,
+    lotSize: 550,
+    tickSize: 0.05,
+    volatility: 0.0014,
+    currency: "₹",
+    category: "Equities",
+    description: "Top private sector lender with heaviest weightage in Nifty 50 and Bank Nifty"
+  },
+  {
+    id: "TATAMOTORS",
+    name: "TATA MOTORS",
+    exchange: "NSE",
+    type: "Equity / Futures",
+    basePrice: 1048.20,
+    lotSize: 700,
+    tickSize: 0.05,
+    volatility: 0.0022,
+    currency: "₹",
+    category: "Equities",
+    description: "Automotive giant leading EV expansion and commercial vehicle sales"
+  },
+  {
+    id: "CRUDEOIL",
+    name: "CRUDE OIL",
+    exchange: "MCX",
+    type: "Commodity Futures",
+    basePrice: 6320.00,
+    lotSize: 100,
+    tickSize: 1.0,
+    volatility: 0.0035,
+    currency: "₹",
+    category: "Commodities",
+    description: "MCX WTI Light Sweet Crude Oil Contract - High technical trend adherence"
+  }
+];
