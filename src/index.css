@@ -3,31 +3,56 @@
 @layer base {
   * {
     box-sizing: border-box;
+    border-color: #172234;
   }
   body {
-    background-color: #0b0f19;
-    color: #f1f5f9;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: #060911;
+    color: #e2e8f0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
     padding: 0;
     overflow-x: hidden;
   }
+  code, kbd, samp, pre, .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar for Terminal */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: #0d1322;
+  background: #080d1a;
 }
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 4px;
+  background: #1c283d;
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #2b3e5e;
+}
+
+/* Crisp Terminal Classes */
+.terminal-card {
+  background: #090e1a;
+  border: 1px solid #162236;
+  border-radius: 12px;
+}
+
+.terminal-header {
+  background: #0c1322;
+  border-bottom: 1px solid #162236;
+  padding: 10px 14px;
+}
+
+.glow-emerald {
+  box-shadow: 0 0 15px rgba(0, 208, 156, 0.15);
+}
+
+.glow-cyan {
+  box-shadow: 0 0 15px rgba(6, 182, 212, 0.15);
 }
 
 @keyframes pulse-slow {
