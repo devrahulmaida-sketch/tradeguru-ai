@@ -1,10 +1,54 @@
-// Real-Time Candlestick & Market Simulation Engine with Technical Indicators
+// Real-Time Candlestick Engine with Real Market Data & Bar-by-Bar Breakdown
+import realData from '../data/realNSEData.json';
 
-export function generateSeedCandles(basePrice, count = 60, volatility = 0.002) {
+export async function fetchLiveRealCandles(symbolId) {
+  // 1. If 24/7 BTC-USD is requested, fetch 100% live real candles from Coinbase REST API
+  if (symbolId === 'BTCUSD') {
+    try {
+      const res = await fetch("https://api.exchange.coinbase.com/products/BTC-USD/candles?granularity=60");
+      if (res.ok) {
+        const raw = await res.json();
+        // Coinbase returns [time, low, high, open, close, volume] sorted newest first
+        const formatted = raw.slice(0, 60).reverse().map(([t, low, high, open, close, volume]) => {
+          const date = new Date(t * 1000);
+          return {
+            time: t * 1000,
+            timeFormatted: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            open: Number(open.toFixed(2)),
+            high: Number(high.toFixed(2)),
+            low: Number(low.toFixed(2)),
+            close: Number(close.toFixed(2)),
+            volume: Math.round(volume * 10)
+          };
+        });
+        return calculateIndicators(formatted);
+      }
+    } catch (e) {
+      console.warn("Coinbase API live fetch error, falling back to snapshot:", e);
+    }
+  }
+
+  // 2. Load authentic snapshot from realNSEData
+  if (realData && realData[symbolId]) {
+    const candles = realData[symbolId].map(c => {
+      const date = new Date(c.time);
+      return {
+        ...c,
+        timeFormatted: date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      };
+    });
+    return calculateIndicators(candles);
+  }
+
+  // 3. Fallback to realistic seed
+  return generateSeedCandles(24260, 60);
+}
+
+export function generateSeedCandles(basePrice, count = 60, volatility = 0.0015) {
   const candles = [];
-  let currentPrice = basePrice * 0.985; // start slightly below
+  let currentPrice = basePrice * 0.99;
   const now = Date.now();
-  const timeframeMs = 60 * 1000; // 1 minute candles
+  const timeframeMs = 60 * 1000;
 
   for (let i = count; i >= 0; i--) {
     const time = new Date(now - i * timeframeMs);
@@ -12,9 +56,9 @@ export function generateSeedCandles(basePrice, count = 60, volatility = 0.002) {
     const open = currentPrice;
     const change = trendDrift + (Math.random() - 0.5) * volatility * currentPrice;
     const close = Math.max(10, open + change);
-    const high = Math.max(open, close) + Math.random() * volatility * currentPrice * 0.8;
-    const low = Math.min(open, close) - Math.random() * volatility * currentPrice * 0.8;
-    const volume = Math.floor(500 + Math.random() * 3500 * (1 + Math.abs(change) / (currentPrice * volatility)));
+    const high = Math.max(open, close) + Math.random() * volatility * currentPrice * 0.7;
+    const low = Math.min(open, close) - Math.random() * volatility * currentPrice * 0.7;
+    const volume = Math.floor(800 + Math.random() * 4000);
 
     candles.push({
       time: time.getTime(),
@@ -35,13 +79,12 @@ export function generateSeedCandles(basePrice, count = 60, volatility = 0.002) {
 export function calculateIndicators(candles) {
   if (!candles || candles.length === 0) return [];
 
-  // EMA Calculation helper
-  const calcEMA = (period, dataKey = 'close') => {
+  const calcEMA = (period) => {
     const k = 2 / (period + 1);
-    let ema = candles[0][dataKey];
+    let ema = candles[0].close;
     return candles.map((c, idx) => {
       if (idx === 0) return ema;
-      ema = c[dataKey] * k + ema * (1 - k);
+      ema = c.close * k + ema * (1 - k);
       return Number(ema.toFixed(2));
     });
   };
@@ -50,7 +93,6 @@ export function calculateIndicators(candles) {
   const ema21 = calcEMA(21);
   const ema50 = calcEMA(50);
 
-  // VWAP Calculation
   let cumulativeTypicalVol = 0;
   let cumulativeVol = 0;
   const vwap = candles.map((c) => {
@@ -60,7 +102,6 @@ export function calculateIndicators(candles) {
     return Number((cumulativeTypicalVol / (cumulativeVol || 1)).toFixed(2));
   });
 
-  // RSI Calculation (14 period)
   const rsiPeriod = 14;
   let gains = 0;
   let losses = 0;
@@ -102,158 +143,150 @@ export function calculateIndicators(candles) {
   }));
 }
 
-// Candlestick Pattern & Setup Detector
-export function detectPatterns(candles) {
-  if (!candles || candles.length < 5) return null;
-  const current = candles[candles.length - 1];
-  const prev = candles[candles.length - 2];
-  const prev2 = candles[candles.length - 3];
+// Pro Trader Bar-by-Bar Breakdown (Al Brooks + Steve Nison)
+export function explainCandleInHinglish(candle, prevCandle, instrumentName = "Asset") {
+  if (!candle) return null;
 
-  const body = Math.abs(current.close - current.open);
-  const upperWick = current.high - Math.max(current.open, current.close);
-  const lowerWick = Math.min(current.open, current.close) - current.low;
-  const totalRange = current.high - current.low || 0.01;
+  const isBullish = candle.close >= candle.open;
+  const bodySize = Math.abs(candle.close - candle.open);
+  const totalRange = Math.max(0.01, candle.high - candle.low);
+  const upperWick = candle.high - Math.max(candle.open, candle.close);
+  const lowerWick = Math.min(candle.open, candle.close) - candle.low;
 
-  const patterns = [];
+  const upperWickPct = ((upperWick / totalRange) * 100).toFixed(0);
+  const lowerWickPct = ((lowerWick / totalRange) * 100).toFixed(0);
+  const bodyPct = ((bodySize / totalRange) * 100).toFixed(0);
 
-  // 1. Hammer / Bullish Pinbar (Steve Nison)
-  if (lowerWick >= 2 * body && upperWick <= body * 0.4 && current.close >= prev.close * 0.998) {
-    patterns.push({
-      name: "Bullish Hammer / Pinbar Rejection",
-      bias: "BULLISH",
-      book: "Japanese Candlestick Charting Techniques (Steve Nison)",
-      principle: "Lower wick shows aggressive buyers defending lower price levels. Smart money absorbs selling pressure.",
-      reliability: "High"
-    });
+  let candleType = "";
+  let orderFlowMeaning = "";
+  let proRule = "";
+  let actionAdvice = "";
+  let speechText = "";
+
+  // Classification
+  if (lowerWick >= 2 * bodySize && upperWick <= bodySize * 0.5) {
+    candleType = "Hammer / Bullish Pinbar (Demand Absorption)";
+    orderFlowMeaning = `Is candle me Sellers ne price ko ₹${candle.low} tak neeche girane ki puri koshish ki, lekin lower levels par Institutional Buyers (Smart Money) ne aggressive orders daal kar saari supply absorb kar li. Niche ki ${lowerWickPct}% lambi wick batati hai ki neeche ke price ko market ne reject kar diya hai.`;
+    proRule = "Steve Nison Law: 'A hammer is proof that buyers stepped in when everyone was panic selling.'";
+    actionAdvice = `Agar yeh 21 EMA (₹${candle.ema21}) ya Support par bani hai, to is candle ke High toot-te hi Long (BUY) ka high-probability setup banta hai. Stop Loss ₹${candle.low} ke thoda neeche rakhein.`;
+    speechText = `Bhai dekho, chart par ek strong Hammer bani hai. Niche lambi wick ka matlab hai buyers ne sellers ko reject kar diya. EMA ke upar buy setup ban raha hai.`;
+  } else if (upperWick >= 2 * bodySize && lowerWick <= bodySize * 0.5) {
+    candleType = "Shooting Star / Bearish Pinbar (Liquidity Rejection)";
+    orderFlowMeaning = `Buyers ne price ko ₹${candle.high} tak upar kheenchne ki koshish ki, lekin upar ke level par Big Institutions ne heavy sell orders execute kiye (Liquidity Grab). Upar ki ${upperWickPct}% lambi wick dikha rahi hai ki buyers fail ho chuke hain aur sellers active ho gaye.`;
+    proRule = "Al Brooks Law: 'Upper tails in resistance zones trap breakout buyers.'";
+    actionAdvice = `Is candle ke Low toot-te hi Short (SELL / PUT) ka trade banta hai. Stop Loss candle ke High (₹${candle.high}) par strictly set karein.`;
+    speechText = `Bhai dhyan do, upar lambi wick wali rejection candle bani hai. Institutional sellers ne upar supply dump ki hai, yahan buying me mat fasna.`;
+  } else if (isBullish && bodyPct > 65) {
+    candleType = "Strong Bullish Trend Bar (Institutional Expansion)";
+    orderFlowMeaning = `Is 5-minute candle me Buyers shuru se aakhir tak puri tarah dominant the. Open hone ke baad price neeche bilkul nahi gayi aur seedhe top ke paas close hui. Volume (${candle.volume}) confirm karta hai ki big money trend ko upar push kar rahi hai.`;
+    proRule = "Al Brooks Law: 'A strong trend bar with small tails means 'Always In Long' - trade pullbacks in direction of the bar.'";
+    actionAdvice = `Sidhe FOMO me mat kudo. Next candle ka thoda pullback (21 EMA ya candle ke 50% retracement) aane do, fir buy karo.`;
+    speechText = `Zabardast green candle bani hai bhai! Buyers poore control me hain. Thoda pullback aane do fir enter karenge.`;
+  } else if (!isBullish && bodyPct > 65) {
+    candleType = "Strong Bearish Trend Bar (Aggressive Selling Climax)";
+    orderFlowMeaning = `Sellers ne market ko heavy selling pressure ke sath neeche mara. ${candle.volume} volume ke sath price apne low ke paas band hui. Iska matlab institutions apni holdings offload kar rahe hain.`;
+    proRule = "Richard Wyckoff: 'Sign of Weakness (SOW) - Supply heavily exceeds demand.'";
+    actionAdvice = `Rising falling knife ko pakadne ki koshish mat karo. Short positions hold karo ya pullback par sell karo.`;
+    speechText = `Bhai strong red bar bana hai. Sellers market ko neeche daba rahe hain, trend ke khilaaf buy mat karna.`;
+  } else {
+    candleType = "Doji / Indecision Compression (Pressure Build-up)";
+    orderFlowMeaning = `Buyers aur Sellers dono ne koshish ki lekin barabar volume hone ki wajah se price lagbhag wahi close ho gayi jahan open hui thi (Body sirf ${bodyPct}% hai). Market me liquidity build ho rahi hai.`;
+    proRule = "Bob Volman: 'Compression precedes expansion. Wait for the breakout with high volume.'";
+    actionAdvice = `Range ke dono taraf orders active hain. Range break hone ka wait karein, premature entry se bachein.`;
+    speechText = `Chart par doji indecision candle hai bhai. Buyers aur sellers dono equal hain, breakout ka wait karo.`;
   }
 
-  // 2. Shooting Star / Bearish Pinbar
-  if (upperWick >= 2 * body && lowerWick <= body * 0.4) {
-    patterns.push({
-      name: "Bearish Shooting Star / Liquidity Rejection",
-      bias: "BEARISH",
-      book: "Japanese Candlestick Charting Techniques (Steve Nison)",
-      principle: "Buyers attempted to push higher but institutions dumped heavy supply into the top wick.",
-      reliability: "High"
-    });
-  }
+  // Indicator Confluences
+  const emaContext = candle.close > candle.ema21
+    ? `✅ Price 21 EMA (₹${candle.ema21}) ke upar hai: Uptrend confirm hai.`
+    : `⚠️ Price 21 EMA (₹${candle.ema21}) ke neeche hai: Downtrend active hai.`;
 
-  // 3. Bullish Engulfing
-  if (prev.close < prev.open && current.close > current.open && current.close > prev.open && current.open < prev.close) {
-    patterns.push({
-      name: "Bullish Engulfing",
-      bias: "BULLISH",
-      book: "Japanese Candlestick Charting Techniques (Steve Nison) & Al Brooks",
-      principle: "Bullish momentum completely overtakes the previous bear candle. Trend reversal confirmation.",
-      reliability: "Very High"
-    });
-  }
+  const vwapContext = candle.close > candle.vwap
+    ? `Institutional buyers VWAP (₹${candle.vwap}) ke upar profit me hain.`
+    : `Institutional sellers VWAP (₹${candle.vwap}) ke neeche haavi hain.`;
 
-  // 4. Bearish Engulfing
-  if (prev.close > prev.open && current.close < current.open && current.close < prev.open && current.open > prev.close) {
-    patterns.push({
-      name: "Bearish Engulfing",
-      bias: "BEARISH",
-      book: "Steve Nison & Al Brooks Bar-by-Bar",
-      principle: "Institutional sellers took full control, obliterating previous session buyers.",
-      reliability: "Very High"
-    });
-  }
+  const rsiContext = candle.rsi > 70
+    ? `RSI ${candle.rsi} (Overbought): Mark Douglas ke mutabiq yahan buy karna risky hai, pullback ka wait karein.`
+    : candle.rsi < 30
+    ? `RSI ${candle.rsi} (Oversold): Smart money reversal dhoondh rahi hai.`
+    : `RSI ${candle.rsi} (Healthy Momentum): Trend clean chal raha hai.`;
 
-  // 5. Al Brooks 20 EMA Pullback / Second Entry
-  if (current.ema21 && Math.abs(current.low - current.ema21) / current.close < 0.0015 && current.close > current.ema21 && current.close > current.open) {
-    patterns.push({
-      name: "Al Brooks 20 EMA Trend Pullback (H2 / Long)",
-      bias: "BULLISH",
-      book: "Reading Price Charts Bar by Bar (Al Brooks)",
-      principle: "Institutions use the 20-period EMA as dynamic support in a trending market. High probability trend continuation entry.",
-      reliability: "Exceptional"
-    });
-  }
-
-  // 6. Smart Money Fair Value Gap (FVG) / Order Block
-  if (current.low > prev2.high) {
-    patterns.push({
-      name: "Bullish Fair Value Gap (FVG) Expansion",
-      bias: "BULLISH",
-      book: "Smart Money Concepts & ICT Methodology",
-      principle: "Sudden institutional volume left an imbalance between Candle 1 High and Candle 3 Low. Price will likely retest and slingshot.",
-      reliability: "High"
-    });
-  }
-
-  // 7. Wyckoff Spring (False breakdown and swift reclaim)
-  if (prev.low < Math.min(...candles.slice(-10, -2).map(c => c.low)) && current.close > prev.open) {
-    patterns.push({
-      name: "Wyckoff Spring / Liquidity Purge",
-      bias: "BULLISH",
-      book: "The Wyckoff Method (Richard Wyckoff)",
-      principle: "Smart money pierced below support to trigger retail stop-losses (liquidity raid), then immediately bought up the order book.",
-      reliability: "Exceptional"
-    });
-  }
-
-  return patterns.length > 0 ? patterns[0] : null;
+  return {
+    candleType,
+    time: candle.timeFormatted,
+    open: candle.open,
+    high: candle.high,
+    low: candle.low,
+    close: candle.close,
+    volume: candle.volume,
+    orderFlowMeaning,
+    proRule,
+    actionAdvice,
+    emaContext,
+    vwapContext,
+    rsiContext,
+    speechText
+  };
 }
 
-// Generate Real-time Trade Setup with Risk/Reward
 export function evaluateRealTimeTradeSetup(candles, symbolInfo) {
   if (!candles || candles.length < 10) return null;
   const current = candles[candles.length - 1];
   const prev = candles[candles.length - 2];
-  const pattern = detectPatterns(candles);
 
-  const isBullish = current.close > current.ema21 && current.rsi < 68;
-  const isBearish = current.close < current.ema21 && current.rsi > 32;
+  const body = Math.abs(current.close - current.open);
+  const upperWick = current.high - Math.max(current.open, current.close);
+  const lowerWick = Math.min(current.open, current.close) - current.low;
 
   let bias = "NEUTRAL";
-  let setupName = "Consolidation / Range Build-up";
-  let bookRef = "Bob Volman - Understanding Price Action";
-  let rationale = "Price is compressing inside a narrow zone. Wait for a clean breakout with volume before placing capital at risk.";
+  let setupName = "20 EMA Trend Consolidation";
+  let bookRef = "Al Brooks - Reading Price Charts Bar by Bar";
+  let rationale = "Price 21 EMA ke paas consolidate kar raha hai. Pullback confirmation ka wait karein.";
   let entry = current.close;
-  let sl = Number((entry * 0.995).toFixed(2));
-  let tp1 = Number((entry * 1.01).toFixed(2));
-  let tp2 = Number((entry * 1.018).toFixed(2));
+  let sl = Number((entry * 0.996).toFixed(2));
+  let tp1 = Number((entry * 1.008).toFixed(2));
+  let tp2 = Number((entry * 1.016).toFixed(2));
   let rr = "1:2.0";
 
-  if (pattern && pattern.bias === "BULLISH") {
+  // Check Hammer on EMA
+  if (lowerWick >= 2 * body && current.close > current.ema21) {
     bias = "BUY";
-    setupName = pattern.name;
-    bookRef = pattern.book;
-    rationale = pattern.principle;
-    entry = Number((current.close + symbolInfo.tickSize).toFixed(2));
-    sl = Number((Math.min(current.low, prev.low) - symbolInfo.tickSize * 2).toFixed(2));
+    setupName = "Bullish Pinbar / Rejection on 21 EMA Support";
+    bookRef = "Steve Nison + Al Brooks (H2 Setup)";
+    rationale = `Sellers ne neeche push kiya lekin 21 EMA (₹${current.ema21}) par institutional buyers ne demand absorb kar li. Niche ki lambi wick liquidity sweep confirm karti hai.`;
+    entry = Number((current.high + symbolInfo.tickSize).toFixed(2));
+    sl = Number((current.low - symbolInfo.tickSize * 2).toFixed(2));
     const risk = entry - sl;
-    tp1 = Number((entry + risk * 1.8).toFixed(2));
-    tp2 = Number((entry + risk * 2.8).toFixed(2));
-    rr = `1:${(1.8).toFixed(1)}`;
-  } else if (pattern && pattern.bias === "BEARISH") {
+    tp1 = Number((entry + risk * 2.0).toFixed(2));
+    tp2 = Number((entry + risk * 3.0).toFixed(2));
+    rr = "1:2.0";
+  } else if (upperWick >= 2 * body && current.close < current.ema21) {
     bias = "SELL";
-    setupName = pattern.name;
-    bookRef = pattern.book;
-    rationale = pattern.principle;
-    entry = Number((current.close - symbolInfo.tickSize).toFixed(2));
-    sl = Number((Math.max(current.high, prev.high) + symbolInfo.tickSize * 2).toFixed(2));
+    setupName = "Shooting Star / Liquidity Raid at Resistance";
+    bookRef = "ICT / Smart Money + Steve Nison";
+    rationale = `High par retail buyers ko trap karne ke baad institutional sellers ne aggressive short orders execute kiye hain.`;
+    entry = Number((current.low - symbolInfo.tickSize).toFixed(2));
+    sl = Number((current.high + symbolInfo.tickSize * 2).toFixed(2));
     const risk = sl - entry;
-    tp1 = Number((entry - risk * 1.8).toFixed(2));
+    tp1 = Number((entry - risk * 2.0).toFixed(2));
     tp2 = Number((entry - risk * 2.8).toFixed(2));
-    rr = `1:${(1.8).toFixed(1)}`;
-  } else if (isBullish && current.rsi > 52 && current.rsi < 65) {
+    rr = "1:2.0";
+  } else if (current.close > current.ema21 && current.close > current.vwap && current.rsi < 65) {
     bias = "BUY";
-    setupName = "Trend Continuation over EMA 21 & VWAP";
+    setupName = "VWAP & 21 EMA Momentum Continuation";
     bookRef = "John J. Murphy - Technical Analysis of the Financial Markets";
-    rationale = "Price is holding above both 21 EMA and VWAP with healthy momentum. Trend is your friend.";
+    rationale = `Price VWAP (₹${current.vwap}) aur 21 EMA dono ke upar strong hold kar raha hai. Trend continuation trade.`;
     entry = current.close;
     sl = Number((current.ema21 * 0.997).toFixed(2));
     const risk = entry - sl;
     tp1 = Number((entry + risk * 2.0).toFixed(2));
     tp2 = Number((entry + risk * 3.0).toFixed(2));
     rr = "1:2.0";
-  } else if (isBearish && current.rsi < 48 && current.rsi > 35) {
+  } else if (current.close < current.ema21 && current.close < current.vwap && current.rsi > 35) {
     bias = "SELL";
-    setupName = "Bearish Breakdown below VWAP & EMA Ribbon";
-    bookRef = "Dr. Alexander Elder - Trading for a Living (Triple Screen)";
-    rationale = "Sellers dominant under VWAP. Higher timeframe tide is down, intraday ripple confirms breakdown.";
+    setupName = "Institutional Breakdown under VWAP Ribbon";
+    bookRef = "Dr. Alexander Elder - Triple Screen Trading System";
+    rationale = `Price VWAP aur moving average ke neeche sustain kar raha hai. Selling volume haavi hai.`;
     entry = current.close;
     sl = Number((current.ema21 * 1.003).toFixed(2));
     const risk = sl - entry;
@@ -262,14 +295,12 @@ export function evaluateRealTimeTradeSetup(candles, symbolInfo) {
     rr = "1:2.0";
   }
 
-  // Psychology advice from Mark Douglas
   const psychologyAdvice = [
-    "Mark Douglas Rule: Accept the full risk of ₹" + Math.abs(entry - sl).toFixed(2) + " per unit before entering.",
-    "Jesse Livermore Wisdom: Big money is made in sitting tight, not in overtrading.",
-    "Al Brooks Rule: Do not move your Stop Loss to break-even prematurely. Let the trade breathe.",
-    "Alexander Elder: If this setup invalidates your thesis, cut the loss immediately without ego."
+    `Mark Douglas Truth: 'हर ट्रेड एक स्वतंत्र संभावना है। रिस्क पहले से स्वीकार करें।'`,
+    `Jesse Livermore: 'बड़ा पैसा बार-बार इन-आउट करने से नहीं, बल्कि सही ट्रेड में टिके रहने से बनता है।'`,
+    `Alexander Elder: 'अगर स्टॉप लॉस हिट हो तो बिना ईगो के तुरंत बाहर निकलो, मार्केट से बदला मत लो!'`,
+    `Al Brooks: 'सिग्नल बार क्लोज होने का हमेशा इंतजार करें, जल्दबाजी में ट्रैप न हों।'`
   ];
-  const selectedPsychology = psychologyAdvice[Math.floor(Math.random() * psychologyAdvice.length)];
 
   return {
     bias,
@@ -281,7 +312,7 @@ export function evaluateRealTimeTradeSetup(candles, symbolInfo) {
     tp1,
     tp2,
     rr,
-    psychologyAdvice: selectedPsychology,
+    psychologyAdvice: psychologyAdvice[Math.floor(Math.random() * psychologyAdvice.length)],
     timestamp: Date.now()
   };
 }

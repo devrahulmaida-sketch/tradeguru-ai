@@ -8,9 +8,10 @@ import AIChatMentor from './components/AIChatMentor';
 import GrowwAuthModal from './components/GrowwAuthModal';
 import AIConfigModal from './components/AIConfigModal';
 import GyanLibraryModal from './components/GyanLibraryModal';
+import CandleInspectorModal from './components/CandleInspectorModal';
 
 import { INSTRUMENTS } from './data/marketSymbols';
-import { generateSeedCandles, calculateIndicators, evaluateRealTimeTradeSetup } from './services/marketData';
+import { fetchLiveRealCandles, calculateIndicators, evaluateRealTimeTradeSetup, explainCandleInHinglish } from './services/marketData';
 import { loadGrowwAccount, saveGrowwAccount } from './services/growwService';
 import { voiceCoach } from './services/voiceCoach';
 import confetti from 'canvas-confetti';
@@ -22,12 +23,11 @@ export default function App() {
   const [candles, setCandles] = useState([]);
   const [currentPrice, setCurrentPrice] = useState(INSTRUMENTS[0].basePrice);
   const [currentPrices, setCurrentPrices] = useState({
-    NIFTY50: 24850.00,
-    BANKNIFTY: 51240.00,
-    RELIANCE: 2985.50,
-    HDFCBANK: 1642.80,
-    TATAMOTORS: 1048.20,
-    CRUDEOIL: 6320.00
+    NIFTY50: 24260.00,
+    BANKNIFTY: 57880.00,
+    BTCUSD: 79050.00,
+    RELIANCE: 1303.10,
+    HDFCBANK: 727.50
   });
 
   const [activePositions, setActivePositions] = useState([]);
@@ -38,8 +38,8 @@ export default function App() {
       name: "NIFTY 50",
       side: "BUY",
       quantity: 50,
-      entryPrice: 24810.00,
-      exitPrice: 24870.00,
+      entryPrice: 24210.00,
+      exitPrice: 24270.00,
       finalPnL: 3000.00,
       exitReason: "Target 1 Hit (1:2 R:R)",
       aiReview: "Flawless Al Brooks 20 EMA pullback entry. Trader exercised patience and allowed the 1:2 target to fill.",
@@ -53,31 +53,37 @@ export default function App() {
       const saved = localStorage.getItem("trade_ai_config");
       if (saved) return JSON.parse(saved);
     } catch (_) {}
-    return { provider: "builtin", apiKey: "", model: "llama-3.3-70b-versatile" };
+    return { provider: "groq", apiKey: "", model: "llama-3.3-70b-versatile" };
   });
 
   const [currentSetup, setCurrentSetup] = useState(null);
   const [presetOrder, setPresetOrder] = useState(null);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [tickSpeed, setTickSpeed] = useState(1); // 1x, 2x, 5x
+  const [tickSpeed, setTickSpeed] = useState(1);
   const [ticksInCurrentCandle, setTicksInCurrentCandle] = useState(0);
 
   // Modals
   const [isGrowwModalOpen, setIsGrowwModalOpen] = useState(false);
   const [isAIConfigModalOpen, setIsAIConfigModalOpen] = useState(false);
   const [isGyanLibraryOpen, setIsGyanLibraryOpen] = useState(false);
+  const [isInspectorOpen, setIsInspectorOpen] = useState(false);
+  const [inspectedCandleData, setInspectedCandleData] = useState(null);
   const [chatExternalPrompt, setChatExternalPrompt] = useState("");
 
-  // Initialize seed candles when instrument changes
+  // Load real candles whenever active instrument changes
   useEffect(() => {
-    const seed = generateSeedCandles(activeInstrument.basePrice, 60, activeInstrument.volatility);
-    setCandles(seed);
-    const lastClose = seed[seed.length - 1].close;
-    setCurrentPrice(lastClose);
-    setCurrentPrices(prev => ({ ...prev, [activeInstrument.id]: lastClose }));
-    const setup = evaluateRealTimeTradeSetup(seed, activeInstrument);
-    setCurrentSetup(setup);
-    setTicksInCurrentCandle(0);
+    let isMounted = true;
+    fetchLiveRealCandles(activeInstrument.id).then((realCandles) => {
+      if (!isMounted || !realCandles || realCandles.length === 0) return;
+      setCandles(realCandles);
+      const lastClose = realCandles[realCandles.length - 1].close;
+      setCurrentPrice(lastClose);
+      setCurrentPrices(p => ({ ...p, [activeInstrument.id]: lastClose }));
+      const setup = evaluateRealTimeTradeSetup(realCandles, activeInstrument);
+      setCurrentSetup(setup);
+      setTicksInCurrentCandle(0);
+    });
+    return () => { isMounted = false; };
   }, [activeInstrument]);
 
   // Persist Groww account
@@ -85,7 +91,7 @@ export default function App() {
     saveGrowwAccount(growwAccount);
   }, [growwAccount]);
 
-  // Persist AI config
+  // Save AI Config
   const handleSaveAIConfig = (newConfig) => {
     setAiConfig(newConfig);
     try {
@@ -93,7 +99,18 @@ export default function App() {
     } catch (_) {}
   };
 
-  // Check SL / TP for active positions on price tick
+  // Inspect Candle Handler (Triggered when user clicks a candle on canvas)
+  const handleInspectCandle = (candle, prevCandle) => {
+    const explanation = explainCandleInHinglish(candle, prevCandle, activeInstrument.name);
+    setInspectedCandleData(explanation);
+    setIsInspectorOpen(true);
+
+    if (voiceCoach.isEnabled && explanation?.speechText) {
+      voiceCoach.speak(explanation.speechText, true);
+    }
+  };
+
+  // Check SL / TP
   const checkPositionTriggers = useCallback((sym, price) => {
     setActivePositions((prevPositions) => {
       const remaining = [];
@@ -113,7 +130,7 @@ export default function App() {
             isClosed = true;
             exitReason = "Target Reached (TP)";
             finalPnL = (pos.tp - pos.entryPrice) * pos.quantity;
-            aiReview = "🎯 Target Hit! Mark Douglas Rule: Capital preserved & institutional profit realized. R:R discipline achieved.";
+            aiReview = "🎯 Target Hit! Mark Douglas Rule: Institutional profit realized. R:R discipline achieved.";
           } else if (pos.sl && price <= pos.sl) {
             isClosed = true;
             exitReason = "Stop Loss Hit (SL)";
@@ -130,23 +147,19 @@ export default function App() {
             isClosed = true;
             exitReason = "Stop Loss Hit (SL)";
             finalPnL = (pos.entryPrice - pos.sl) * pos.quantity;
-            aiReview = "🛑 Structural SL Hit: Smart Money shifted momentum. Taking the loss promptly kept you in the game.";
+            aiReview = "🛑 Structural SL Hit: Smart Money shifted momentum. Taking the loss promptly kept you safe.";
           }
         }
 
         if (isClosed) {
-          // Announce in voice coach
           if (voiceCoach.isEnabled) {
             voiceCoach.speak(`Trade closed on ${pos.name}. Result: ${exitReason}. Profit and loss: ${finalPnL >= 0 ? 'Profit' : 'Loss'} of ₹${Math.abs(finalPnL).toFixed(0)}.`);
           }
 
           if (finalPnL > 0) {
-            try {
-              confetti({ particleCount: 40, spread: 60 });
-            } catch (_) {}
+            try { confetti({ particleCount: 40, spread: 60 }); } catch (_) {}
           }
 
-          // Record in closed trades
           const closedItem = {
             ...pos,
             exitPrice: pos.tp && price >= pos.tp ? pos.tp : pos.sl,
@@ -157,8 +170,6 @@ export default function App() {
           };
 
           setClosedTrades(hist => [closedItem, ...hist]);
-
-          // Update Groww balance & realized PnL
           setGrowwAccount(acc => ({
             ...acc,
             balance: acc.balance + finalPnL,
@@ -172,7 +183,7 @@ export default function App() {
     });
   }, []);
 
-  // Tick generator function
+  // Real-time market tick generator
   const tickMarket = useCallback(() => {
     setCandles((prevCandles) => {
       if (!prevCandles || prevCandles.length === 0) return prevCandles;
@@ -180,7 +191,6 @@ export default function App() {
       const lastIdx = prevCandles.length - 1;
       const lastCandle = { ...prevCandles[lastIdx] };
 
-      // Micro-tick fluctuation
       const noise = (Math.random() - 0.49) * activeInstrument.volatility * lastCandle.close * 0.4;
       const newClose = Number((lastCandle.close + noise).toFixed(2));
       const newHigh = Number(Math.max(lastCandle.high, newClose).toFixed(2));
@@ -190,10 +200,8 @@ export default function App() {
       setCurrentPrice(newClose);
       setCurrentPrices(p => ({ ...p, [activeInstrument.id]: newClose }));
 
-      // Check SL/TP triggers
       checkPositionTriggers(activeInstrument.id, newClose);
 
-      // Bar completion logic (every 12 ticks forms a new candle)
       let nextCandles = [...prevCandles];
       if (ticksInCurrentCandle >= 12) {
         setTicksInCurrentCandle(0);
@@ -225,7 +233,7 @@ export default function App() {
     });
   }, [activeInstrument, ticksInCurrentCandle, checkPositionTriggers]);
 
-  // Real-time ticking interval
+  // Tick timer
   useEffect(() => {
     if (!isPlaying) return;
     const intervalMs = Math.max(200, 1000 / tickSpeed);
@@ -235,15 +243,14 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isPlaying, tickSpeed, tickMarket]);
 
-  // Execute trade handler
+  // Execute trade
   const handleExecuteTrade = (trade) => {
     setActivePositions(prev => [trade, ...prev]);
     if (voiceCoach.isEnabled) {
-      voiceCoach.speak(`Groww order placed. ${trade.side} ${trade.quantity} ${trade.name} at ₹${trade.entryPrice}. Stop Loss set at ₹${trade.sl}.`);
+      voiceCoach.speak(`Groww order placed. ${trade.side} ${trade.quantity} ${trade.name} at ${trade.entryPrice}. Stop Loss at ${trade.sl}.`);
     }
   };
 
-  // Close position manually
   const handleManualClosePosition = (positionId) => {
     const pos = activePositions.find(p => p.id === positionId);
     if (!pos) return;
@@ -270,7 +277,6 @@ export default function App() {
     }));
   };
 
-  // Prepare market context for AI query
   const marketContext = {
     symbol: activeInstrument.id,
     symbolName: activeInstrument.name,
@@ -288,7 +294,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#080d1a] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white font-sans">
-      {/* Navigation Header */}
       <Navbar
         growwAccount={growwAccount}
         aiConfig={aiConfig}
@@ -297,9 +302,7 @@ export default function App() {
         onOpenGyanLibrary={() => setIsGyanLibraryOpen(true)}
       />
 
-      {/* Main Workspace Grid */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 space-y-4">
-        {/* Top Grid: Chart on Left, Mentor & Execution on Right */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* Left Column (8 Cols): Candlestick Chart & Positions */}
           <div className="lg:col-span-8 space-y-4">
@@ -316,9 +319,9 @@ export default function App() {
               activePosition={activePositions.find(p => p.symbol === activeInstrument.id)}
               currentSetup={currentSetup}
               onManualTick={tickMarket}
+              onInspectCandle={handleInspectCandle}
             />
 
-            {/* Positions Table & Post-Trade Journal */}
             <PositionsJournal
               activePositions={activePositions}
               closedTrades={closedTrades}
@@ -327,9 +330,8 @@ export default function App() {
             />
           </div>
 
-          {/* Right Column (4 Cols): AI Signal HUD & Execution Terminal */}
+          {/* Right Column (4 Cols): AI Signal & Execution Terminal */}
           <div className="lg:col-span-4 space-y-4">
-            {/* Live AI Setup & Wisdom Radar */}
             <AIMentorPanel
               currentSetup={currentSetup}
               activeInstrument={activeInstrument}
@@ -337,7 +339,6 @@ export default function App() {
               onOpenGyanLibrary={() => setIsGyanLibraryOpen(true)}
             />
 
-            {/* Order Execution Terminal */}
             <OrderExecutionPanel
               activeInstrument={activeInstrument}
               currentPrice={currentPrice}
@@ -347,7 +348,6 @@ export default function App() {
               onClearPresetOrder={() => setPresetOrder(null)}
             />
 
-            {/* AI Interactive Chat Mentor (Live Hinglish/English coach) */}
             <AIChatMentor
               marketContext={marketContext}
               aiConfig={aiConfig}
@@ -378,6 +378,15 @@ export default function App() {
         onClose={() => setIsGyanLibraryOpen(false)}
         onAskAIAboutBook={(bookTitle) => {
           setChatExternalPrompt(bookTitle);
+        }}
+      />
+
+      <CandleInspectorModal
+        isOpen={isInspectorOpen}
+        onClose={() => setIsInspectorOpen(false)}
+        candleData={inspectedCandleData}
+        onAskAIAboutCandle={(prompt) => {
+          setChatExternalPrompt(prompt);
         }}
       />
     </div>
