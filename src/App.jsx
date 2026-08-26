@@ -9,7 +9,7 @@ import ChartSection from './components/ChartSection';
 import AIPatternAutoTrader from './components/AIPatternAutoTrader';
 import MarketDepthTape from './components/MarketDepthTape';
 import AIMentorPanel from './components/AIMentorPanel';
-import OrderExecutionPanel from './components/OrderExecutionPanel';
+import SimpleLearningTerminal from './components/SimpleLearningTerminal';
 import PositionsJournal from './components/PositionsJournal';
 import AIChatMentor from './components/AIChatMentor';
 import GrowwAuthModal from './components/GrowwAuthModal';
@@ -593,7 +593,7 @@ export default function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              Order Terminal
+              🎓 Practice Terminal
             </button>
             <button
               onClick={() => setRightSidebarTab("autotrader")}
@@ -603,7 +603,7 @@ export default function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              AI Auto-Trader
+              🤖 AI Compounding
             </button>
             <button
               onClick={() => setRightSidebarTab("signals")}
@@ -613,7 +613,7 @@ export default function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              Live Signal
+              ⚡ Live Signal
             </button>
             <button
               onClick={() => setRightSidebarTab("chat")}
@@ -623,19 +623,19 @@ export default function App() {
                   : "text-slate-400 hover:text-white"
               }`}
             >
-              AI Copilot
+              💬 AI Mentor
             </button>
           </div>
 
-          {/* Tab 1: Order Terminal */}
+          {/* Tab 1: Simple Learning Terminal (Main Buttons Only + 100% Dummy Learning Mode) */}
           {rightSidebarTab === "execute" && (
-            <OrderExecutionPanel
+            <SimpleLearningTerminal
               activeInstrument={activeInstrument}
               currentPrice={currentPrice}
-              growwAccount={growwAccount}
+              candles={candles}
               onExecuteTrade={handleExecuteTrade}
-              presetOrder={presetOrder}
-              onClearPresetOrder={() => setPresetOrder(null)}
+              activePosition={activePositions.find(p => p.symbol === activeInstrument.id)}
+              onClosePosition={handleManualClosePosition}
             />
           )}
 
