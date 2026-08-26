@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, Key, RefreshCw, CheckCircle2, Wallet, UserCheck, AlertTriangle, ExternalLink } from 'lucide-react';
+import { X, ShieldCheck, Key, RefreshCw, CheckCircle2, Wallet, UserCheck, AlertTriangle, ExternalLink, HelpCircle, ArrowRight } from 'lucide-react';
 
 export default function GrowwAuthModal({
   isOpen,
@@ -9,7 +9,7 @@ export default function GrowwAuthModal({
 }) {
   if (!isOpen) return null;
 
-  const [activeTab, setActiveTab] = useState("connect"); // "connect" | "credentials" | "holdings"
+  const [activeTab, setActiveTab] = useState("connect"); // "connect" | "credentials" | "guide" | "holdings"
   const [formData, setFormData] = useState({
     clientId: growwAccount.clientId || "GRW-782491",
     accountName: growwAccount.accountName || "Arjun Trader",
@@ -29,7 +29,7 @@ export default function GrowwAuthModal({
       ...formData,
       isConnected: true
     });
-    setNotification("Groww Demat Account Connected Successfully!");
+    setNotification("Groww Demat Account Authorised & Connected!");
     setTimeout(() => {
       setNotification(null);
       onClose();
@@ -61,72 +61,132 @@ export default function GrowwAuthModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-[#111827] border border-[#243350] rounded-2xl w-full max-w-xl overflow-hidden shadow-2xl flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-[#111827] border border-[#243350] rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl flex flex-col">
         {/* Header */}
-        <div className="bg-gradient-to-r from-[#0d1322] to-[#131d31] p-5 border-b border-[#243350] flex items-center justify-between">
+        <div className="bg-gradient-to-r from-[#0d1322] to-[#131d31] p-4 sm:p-5 border-b border-[#243350] flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-emerald-400 font-black text-xl">
               G
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h3 className="text-lg font-bold text-white tracking-tight">Groww Demat Integration</h3>
+                <h3 className="text-base font-bold text-white tracking-tight">Groww Demat Authorisation</h3>
                 <span className="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
-                  SEBI Compliant API
+                  SEBI Mandate
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Direct Broker Sync & Practice Execution Terminal</p>
+              <p className="text-xs text-slate-400">Official API, Demat Balance & Live Order Execution</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-[#1a263e] transition-colors"
+            className="text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-[#1a263e]"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#1f293d] bg-[#0c1220] px-4">
+        <div className="flex border-b border-[#1f293d] bg-[#0c1220] px-4 overflow-x-auto">
           <button
             onClick={() => setActiveTab("connect")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-all ${
               activeTab === "connect"
                 ? "border-emerald-500 text-emerald-400"
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
-            1-Click Connect & Balance
+            1-Click Connect (Practice)
+          </button>
+          <button
+            onClick={() => setActiveTab("guide")}
+            className={`py-3 px-3.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-all flex items-center gap-1 ${
+              activeTab === "guide"
+                ? "border-amber-500 text-amber-400"
+                : "border-transparent text-slate-400 hover:text-slate-200"
+            }`}
+          >
+            <HelpCircle className="w-3.5 h-3.5" /> Authorise Kaise Karein?
           </button>
           <button
             onClick={() => setActiveTab("credentials")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-all ${
               activeTab === "credentials"
                 ? "border-emerald-500 text-emerald-400"
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
-            Live Groww API Keys (TOTP)
+            Live Groww API (TOTP)
           </button>
           <button
             onClick={() => setActiveTab("holdings")}
-            className={`py-3 px-4 text-xs font-semibold border-b-2 transition-all ${
+            className={`py-3 px-3.5 text-xs font-semibold border-b-2 whitespace-nowrap transition-all ${
               activeTab === "holdings"
                 ? "border-emerald-500 text-emerald-400"
                 : "border-transparent text-slate-400 hover:text-slate-200"
             }`}
           >
-            Demat Holdings ({growwAccount.holdings?.length || 0})
+            Demat Holdings
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-5 max-h-[70vh] overflow-y-auto space-y-4">
+        <div className="p-5 max-h-[72vh] overflow-y-auto space-y-4">
           {notification && (
             <div className="p-3 bg-emerald-500/15 border border-emerald-500/40 rounded-xl text-emerald-300 text-xs font-semibold flex items-center gap-2 animate-bounce">
               <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
               {notification}
+            </div>
+          )}
+
+          {/* TAB: How to Authorise Groww (Full Guide) */}
+          {activeTab === "guide" && (
+            <div className="space-y-3.5 text-xs">
+              <div className="p-3.5 bg-amber-500/10 border border-amber-500/30 rounded-xl space-y-1">
+                <h4 className="font-bold text-amber-300 text-xs flex items-center gap-1.5">
+                  <Key className="w-4 h-4" /> Groww Account Authorise Karne Ka Step-by-Step Tarika:
+                </h4>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  SEBI ke naye niyam ke mutabiq Indian brokers (Groww, Zerodha, Angel) direct password se trade allow nahi karte. Inhe **API Key + TOTP (2-Factor)** se authorise kiya jata hai:
+                </p>
+              </div>
+
+              {/* Step 1 */}
+              <div className="bg-[#141e30] p-3.5 rounded-xl border border-[#22314e] space-y-1">
+                <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase">Step 1: Client ID & Profile</span>
+                <h5 className="font-bold text-white text-xs">Apna UCC (Client ID) Dekhein:</h5>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Groww App open karein ➔ Top Right Profile icon par click karein ➔ <strong>Account Details</strong> me jayein. Wahan aapko aapka <strong>Client ID (e.g. GRW-XXXXXX)</strong> milega.
+                </p>
+              </div>
+
+              {/* Step 2 */}
+              <div className="bg-[#141e30] p-3.5 rounded-xl border border-[#22314e] space-y-1">
+                <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase">Step 2: API Keys & Developer Access</span>
+                <h5 className="font-bold text-white text-xs">Groww Developer App Banayein:</h5>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Groww Developer Portal par login karke ek App create karein. Wahan se aapko <strong>API Key</strong> aur <strong>API Secret</strong> generate karke yahan paste karna hota hai.
+                </p>
+              </div>
+
+              {/* Step 3 */}
+              <div className="bg-[#141e30] p-3.5 rounded-xl border border-[#22314e] space-y-1">
+                <span className="text-[10px] font-mono text-purple-400 font-bold uppercase">Step 3: TOTP 2FA Authorisation (SEBI Rule)</span>
+                <h5 className="font-bold text-white text-xs">Google Authenticator TOTP Secret:</h5>
+                <p className="text-slate-300 text-[11px] leading-relaxed">
+                  Groww Security settings me jakar TOTP enable karein. Wahan jo QR code ke sath <strong>Base32 Secret Key</strong> milti hai, use yahan "TOTP Secret" me daalein. Isse platform har 30 second me real-time login token automatic refresh karta hai!
+                </p>
+              </div>
+
+              {/* Switch to credentials button */}
+              <button
+                onClick={() => setActiveTab("credentials")}
+                className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 transition-all shadow-md"
+              >
+                <span>Credentials Tab Me Details Daalein</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           )}
 
@@ -147,7 +207,7 @@ export default function GrowwAuthModal({
                 <div className="text-right">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/40">
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                    {growwAccount.isConnected ? "Active & Linked" : "Disconnected"}
+                    {growwAccount.isConnected ? "Authorised & Linked" : "Disconnected"}
                   </span>
                 </div>
               </div>
@@ -159,7 +219,7 @@ export default function GrowwAuthModal({
                   <p className="text-xl font-bold font-mono text-emerald-400 mt-1">
                     ₹{growwAccount.balance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </p>
-                  <span className="text-[10px] text-slate-500">Instant Execution Margin</span>
+                  <span className="text-[10px] text-slate-500">Live Margin for Orders</span>
                 </div>
                 <div className="bg-[#0f172a] p-3.5 rounded-xl border border-[#1e293b]">
                   <span className="text-[11px] text-slate-400">Realized P&L Today</span>
@@ -170,7 +230,7 @@ export default function GrowwAuthModal({
                 </div>
               </div>
 
-              {/* Quick Reset Capital for Practice */}
+              {/* Quick Reset Capital */}
               <div className="bg-[#141e30] p-3.5 rounded-xl border border-[#22314e]">
                 <label className="text-xs font-semibold text-slate-300 block mb-2">
                   Paper Trading / Simulation Capital Presets:
@@ -188,7 +248,7 @@ export default function GrowwAuthModal({
                 </div>
               </div>
 
-              {/* Disconnect or Re-sync */}
+              {/* Buttons */}
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
@@ -217,7 +277,7 @@ export default function GrowwAuthModal({
               <div className="p-3 bg-cyan-500/10 border border-cyan-500/30 rounded-xl text-cyan-300 text-xs flex items-start gap-2">
                 <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
                 <p>
-                  Groww OpenAPI authentication uses <strong>Client ID</strong>, <strong>API Key</strong>, and <strong>TOTP 2FA</strong>. Your credentials remain strictly in your browser session and are never transmitted to third parties.
+                  Groww OpenAPI authentication uses <strong>Client ID</strong>, <strong>API Key</strong>, and <strong>TOTP 2FA</strong>. Credentials remain locally in your browser.
                 </p>
               </div>
 
@@ -228,7 +288,7 @@ export default function GrowwAuthModal({
                   value={formData.clientId}
                   onChange={(e) => setFormData({ ...formData, clientId: e.target.value })}
                   placeholder="e.g. GRW-782491"
-                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                   required
                 />
               </div>
@@ -240,7 +300,7 @@ export default function GrowwAuthModal({
                   value={formData.apiKey}
                   onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                   placeholder="grw_live_xxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
 
@@ -251,7 +311,7 @@ export default function GrowwAuthModal({
                   value={formData.apiSecret}
                   onChange={(e) => setFormData({ ...formData, apiSecret: e.target.value })}
                   placeholder="grw_sec_xxxxxxxxxxxxxxxxxxxxxxxx"
-                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
 
@@ -261,8 +321,8 @@ export default function GrowwAuthModal({
                   type="text"
                   value={formData.totp}
                   onChange={(e) => setFormData({ ...formData, totp: e.target.value })}
-                  placeholder="Base32 TOTP secret for automated token generation"
-                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  placeholder="Base32 TOTP secret for automatic token refresh"
+                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500 font-mono"
                 />
               </div>
 
@@ -271,7 +331,7 @@ export default function GrowwAuthModal({
                 <select
                   value={formData.mode}
                   onChange={(e) => setFormData({ ...formData, mode: e.target.value })}
-                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full bg-[#0d1322] border border-[#243350] rounded-xl px-3.5 py-2 text-xs text-white focus:outline-none focus:border-emerald-500"
                 >
                   <option value="SANDBOX_SYNC">Practice Mode (Groww Sandbox - Safe Live Simulator)</option>
                   <option value="LIVE_BROKER">Live Broker Execution (Groww Trading API Live)</option>
@@ -283,13 +343,13 @@ export default function GrowwAuthModal({
                   type="submit"
                   className="w-full py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-lg shadow-emerald-500/25 transition-all"
                 >
-                  Save & Connect Groww API
+                  Save & Authorise Groww
                 </button>
               </div>
             </form>
           )}
 
-          {/* TAB 3: Holdings */}
+          {/* TAB 4: Holdings */}
           {activeTab === "holdings" && (
             <div className="space-y-3">
               <div className="text-xs text-slate-400 flex items-center justify-between">
