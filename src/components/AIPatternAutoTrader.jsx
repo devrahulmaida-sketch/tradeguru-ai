@@ -165,7 +165,8 @@ export default function AIPatternAutoTrader({
             setIsAutoTrading(next);
             soundEngine.playChime('setup');
           }}
-          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md ${
+          data-guide="ai_auto_trader"
+          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-md cursor-pointer ${
             isAutoTrading
               ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-emerald-500/25 ring-1 ring-emerald-400/40'
               : 'bg-[#141f33] hover:bg-[#1e2e4a] text-slate-400 border border-[#233550]'
@@ -201,10 +202,12 @@ export default function AIPatternAutoTrader({
 
         {patterns.map((p) => {
           const isHigh = p.confidence >= 85;
+          const guideKey = p.id === 'ob' ? 'pattern_order_block' : p.id === 'spring' ? 'pattern_wyckoff_spring' : p.id === 'fvg' ? 'pattern_fvg' : 'al_brooks';
           return (
             <div
               key={p.id}
-              className={`p-2.5 rounded-xl border transition-all ${
+              data-guide={guideKey}
+              className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
                 isHigh
                   ? 'bg-[#111c2e] border-emerald-500/40 shadow-sm'
                   : 'bg-[#0c1220] border-[#182336] opacity-80'

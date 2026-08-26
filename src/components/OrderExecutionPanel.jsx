@@ -173,14 +173,16 @@ export default function OrderExecutionPanel({
             <button
               type="button"
               onClick={() => setOrderType("MARKET")}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${orderType === 'MARKET' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}
+              data-guide="market_order"
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer ${orderType === 'MARKET' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}
             >
               Market
             </button>
             <button
               type="button"
               onClick={() => setOrderType("LIMIT")}
-              className={`px-2.5 py-1 rounded-md text-[11px] font-bold ${orderType === 'LIMIT' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}
+              data-guide="limit_order"
+              className={`px-2.5 py-1 rounded-md text-[11px] font-bold cursor-pointer ${orderType === 'LIMIT' ? 'bg-emerald-500 text-white' : 'text-slate-400'}`}
             >
               Limit
             </button>
@@ -194,7 +196,8 @@ export default function OrderExecutionPanel({
             <button
               type="button"
               onClick={() => { setRiskPercent(1.0); autoCalculateQuantity(1.0); }}
-              className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 hover:bg-purple-500/30"
+              data-guide="elder_risk_rule"
+              className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 hover:bg-purple-500/30 cursor-pointer"
               title="1% Capital Risk (Mark Douglas & Alexander Elder)"
             >
               1% Risk
@@ -202,7 +205,8 @@ export default function OrderExecutionPanel({
             <button
               type="button"
               onClick={() => { setRiskPercent(2.0); autoCalculateQuantity(2.0); }}
-              className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 hover:bg-purple-500/30"
+              data-guide="elder_risk_rule"
+              className="px-2 py-0.5 text-[10px] font-bold bg-purple-500/20 text-purple-300 rounded border border-purple-500/30 hover:bg-purple-500/30 cursor-pointer"
               title="2% Capital Risk"
             >
               2% Risk
@@ -245,7 +249,7 @@ export default function OrderExecutionPanel({
 
         {/* SL and Target Grid */}
         <div className="grid grid-cols-2 gap-3">
-          <div>
+          <div data-guide="stop_loss">
             <label className="text-[11px] font-medium text-rose-400 block mb-1">
               🛑 Stop Loss (SL ₹)
             </label>
@@ -259,7 +263,7 @@ export default function OrderExecutionPanel({
             />
           </div>
 
-          <div>
+          <div data-guide="take_profit">
             <label className="text-[11px] font-medium text-emerald-400 block mb-1">
               🎯 Take Profit (TP ₹)
             </label>

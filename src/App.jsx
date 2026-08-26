@@ -17,6 +17,7 @@ import AIConfigModal from './components/AIConfigModal';
 import GyanLibraryModal from './components/GyanLibraryModal';
 import CandleInspectorModal from './components/CandleInspectorModal';
 import SetupsHubModal from './components/SetupsHubModal';
+import ProHinglishTooltip from './components/ProHinglishTooltip';
 
 import { INSTRUMENTS } from './data/marketSymbols';
 import { fetchLiveRealCandles, calculateIndicators, evaluateRealTimeTradeSetup, explainCandleInHinglish } from './services/marketData';
@@ -78,6 +79,7 @@ export default function App() {
   const [bottomTrayTab, setBottomTrayTab] = useState("positions"); // "positions" | "depth" | "journal"
   const [soundMode, setSoundMode] = useState("CHIMES_ONLY");
   const [currentTime, setCurrentTime] = useState("");
+  const [isBeginnerMode, setIsBeginnerMode] = useState(true);
 
   // Modals
   const [isGrowwModalOpen, setIsGrowwModalOpen] = useState(false);
@@ -364,9 +366,25 @@ export default function App() {
 
         {/* Right Actions */}
         <div className="flex items-center gap-2">
+          {/* Beginner Mode Toggle */}
+          <button
+            onClick={() => setIsBeginnerMode(!isBeginnerMode)}
+            className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 border shadow-sm ${
+              isBeginnerMode
+                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 ring-1 ring-emerald-400/20'
+                : 'bg-[#0e1626] text-slate-400 border-[#1e2a3f]'
+            }`}
+            title="Toggle Beginner Explainer (Hover on anything to see Hinglish guide)"
+          >
+            <span>💡</span>
+            <span className="hidden sm:inline">Beginner Mode:</span>
+            <span className="font-bold">{isBeginnerMode ? "ON" : "OFF"}</span>
+          </button>
+
           {/* Institutional Setups Hub */}
           <button
             onClick={() => setIsSetupsHubOpen(true)}
+            data-guide="al_brooks"
             className="px-2.5 py-1.5 rounded-lg bg-[#0e1626] hover:bg-[#162238] text-emerald-400 border border-emerald-500/30 text-xs font-semibold transition-all flex items-center gap-1"
           >
             <Target className="w-3.5 h-3.5" />
@@ -406,6 +424,7 @@ export default function App() {
           {/* Books Gyan Modal */}
           <button
             onClick={() => setIsGyanLibraryOpen(true)}
+            data-guide="mark_douglas"
             className="px-2.5 py-1.5 rounded-lg bg-[#0e1626] hover:bg-[#162238] text-slate-300 hover:text-white border border-[#1e2a3f] text-xs font-semibold transition-all flex items-center gap-1"
           >
             <BookOpen className="w-3.5 h-3.5 text-amber-400" />
@@ -415,7 +434,8 @@ export default function App() {
           {/* Groww Demat Button */}
           <button
             onClick={() => setIsGrowwModalOpen(true)}
-            className="px-3 py-1.5 rounded-lg bg-[#0e1626] hover:bg-[#162238] text-white text-xs font-semibold transition-all flex items-center gap-1.5 border border-emerald-500/40"
+            data-guide="groww_balance"
+            className="px-3 py-1.5 rounded-lg bg-[#0e1626] hover:bg-[#162238] text-white text-xs font-semibold transition-all flex items-center gap-1.5 border border-emerald-500/40 cursor-pointer"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             <span className="text-slate-400 hidden sm:inline">Groww:</span>
@@ -719,6 +739,9 @@ export default function App() {
           setRightSidebarTab("chat");
         }}
       />
+
+      {/* Interactive Beginner Friendly Hover Tooltip Explainer */}
+      <ProHinglishTooltip isEnabled={isBeginnerMode} />
     </div>
   );
 }

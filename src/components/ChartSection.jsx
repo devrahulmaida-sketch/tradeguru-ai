@@ -371,7 +371,8 @@ export default function ChartSection({
               <button
                 key={tf}
                 onClick={() => setSelectedTimeframe(tf)}
-                className={`px-2 py-0.5 rounded ${
+                data-guide={tf === '1m' ? 'timeframe_1m' : 'timeframe_5m'}
+                className={`px-2 py-0.5 rounded cursor-pointer ${
                   selectedTimeframe === tf ? 'bg-[#1b293e] text-emerald-400 font-bold' : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -384,7 +385,8 @@ export default function ChartSection({
           <div className="hidden lg:flex items-center gap-1 text-[11px]">
             <button
               onClick={() => setShowIndicators(p => ({ ...p, ema21: !p.ema21 }))}
-              className={`px-2 py-0.5 rounded border font-medium ${
+              data-guide="ema21"
+              className={`px-2 py-0.5 rounded border font-medium cursor-pointer ${
                 showIndicators.ema21 ? 'bg-amber-500/10 border-amber-500/30 text-amber-300' : 'bg-[#0e1626] border-[#1b293e] text-slate-500'
               }`}
             >
@@ -392,7 +394,8 @@ export default function ChartSection({
             </button>
             <button
               onClick={() => setShowIndicators(p => ({ ...p, vwap: !p.vwap }))}
-              className={`px-2 py-0.5 rounded border font-medium ${
+              data-guide="vwap"
+              className={`px-2 py-0.5 rounded border font-medium cursor-pointer ${
                 showIndicators.vwap ? 'bg-purple-500/10 border-purple-500/30 text-purple-300' : 'bg-[#0e1626] border-[#1b293e] text-slate-500'
               }`}
             >

@@ -32,7 +32,7 @@ export default function MarketDepthTape({ currentPrice, activeInstrument }) {
   return (
     <div className="bg-[#0e1424] border border-[#1e2a3f] rounded-2xl overflow-hidden shadow-2xl flex flex-col font-mono text-xs">
       {/* Header */}
-      <div className="p-3 border-b border-[#1e2a3f] bg-[#0c1220] flex items-center justify-between">
+      <div data-guide="market_depth" className="p-3 border-b border-[#1e2a3f] bg-[#0c1220] flex items-center justify-between cursor-pointer">
         <div className="flex items-center gap-2">
           <Layers className="w-4 h-4 text-emerald-400" />
           <span className="font-bold text-white tracking-wide">Level 2 Market Depth (Groww Order Book)</span>
