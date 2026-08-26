@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from './components/Navbar';
+import TopMarketTicker from './components/TopMarketTicker';
+import RealTimeGrowwAuth from './components/RealTimeGrowwAuth';
 import ChartSection from './components/ChartSection';
+import AIPatternAutoTrader from './components/AIPatternAutoTrader';
+import MarketDepthTape from './components/MarketDepthTape';
 import AIMentorPanel from './components/AIMentorPanel';
 import OrderExecutionPanel from './components/OrderExecutionPanel';
 import PositionsJournal from './components/PositionsJournal';
@@ -14,7 +18,7 @@ import SetupsHubModal from './components/SetupsHubModal';
 import { INSTRUMENTS } from './data/marketSymbols';
 import { fetchLiveRealCandles, calculateIndicators, evaluateRealTimeTradeSetup, explainCandleInHinglish } from './services/marketData';
 import { loadGrowwAccount, saveGrowwAccount } from './services/growwService';
-import { voiceCoach } from './services/voiceCoach';
+import { soundEngine } from './services/voiceCoach';
 import confetti from 'canvas-confetti';
 
 export default function App() {
@@ -43,7 +47,7 @@ export default function App() {
       exitPrice: 24270.00,
       finalPnL: 3000.00,
       exitReason: "Target 1 Hit (1:2 R:R)",
-      aiReview: "Flawless Al Brooks 20 EMA pullback entry. Trader exercised patience and allowed the 1:2 target to fill.",
+      aiReview: "Flawless Al Brooks 20 EMA pullback entry. Compounded Groww balance safely.",
       timeClosedFormatted: "09:42 AM"
     }
   ]);
@@ -72,7 +76,7 @@ export default function App() {
   const [inspectedCandleData, setInspectedCandleData] = useState(null);
   const [chatExternalPrompt, setChatExternalPrompt] = useState("");
 
-  // Load real candles whenever active instrument changes
+  // Load real candles
   useEffect(() => {
     let isMounted = true;
     fetchLiveRealCandles(activeInstrument.id).then((realCandles) => {
@@ -93,7 +97,6 @@ export default function App() {
     saveGrowwAccount(growwAccount);
   }, [growwAccount]);
 
-  // Save AI Config
   const handleSaveAIConfig = (newConfig) => {
     setAiConfig(newConfig);
     try {
@@ -101,18 +104,14 @@ export default function App() {
     } catch (_) {}
   };
 
-  // Inspect Candle Handler (Triggered when user clicks a candle on canvas)
   const handleInspectCandle = (candle, prevCandle) => {
     const explanation = explainCandleInHinglish(candle, prevCandle, activeInstrument.name);
     setInspectedCandleData(explanation);
     setIsInspectorOpen(true);
-
-    if (voiceCoach.isEnabled && explanation?.speechText) {
-      voiceCoach.speak(explanation.speechText, true);
-    }
+    soundEngine.playChime('setup');
   };
 
-  // Check SL / TP
+  // Check SL / TP for active positions
   const checkPositionTriggers = useCallback((sym, price) => {
     setActivePositions((prevPositions) => {
       const remaining = [];
@@ -132,12 +131,12 @@ export default function App() {
             isClosed = true;
             exitReason = "Target Reached (TP)";
             finalPnL = (pos.tp - pos.entryPrice) * pos.quantity;
-            aiReview = "🎯 Target Hit! Mark Douglas Rule: Institutional profit realized. R:R discipline achieved.";
+            aiReview = "🎯 Target Hit! Mark Douglas Rule: Capital preserved & compounded. R:R discipline achieved.";
           } else if (pos.sl && price <= pos.sl) {
             isClosed = true;
             exitReason = "Stop Loss Hit (SL)";
             finalPnL = (pos.sl - pos.entryPrice) * pos.quantity;
-            aiReview = "🛑 Disciplined Stop Loss: Dr. Alexander Elder 2% rule honored. You cut the loss cleanly without hoping or revenge trading.";
+            aiReview = "🛑 Disciplined Stop Loss: Dr. Alexander Elder 2% rule honored. You cut the loss cleanly.";
           }
         } else if (pos.side === 'SELL') {
           if (pos.tp && price <= pos.tp) {
@@ -149,17 +148,16 @@ export default function App() {
             isClosed = true;
             exitReason = "Stop Loss Hit (SL)";
             finalPnL = (pos.entryPrice - pos.sl) * pos.quantity;
-            aiReview = "🛑 Structural SL Hit: Smart Money shifted momentum. Taking the loss promptly kept you safe.";
+            aiReview = "🛑 Structural SL Hit: Smart Money shifted momentum. Taking loss promptly kept you safe.";
           }
         }
 
         if (isClosed) {
-          if (voiceCoach.isEnabled) {
-            voiceCoach.speak(`Trade closed on ${pos.name}. Result: ${exitReason}. Profit and loss: ${finalPnL >= 0 ? 'Profit' : 'Loss'} of ₹${Math.abs(finalPnL).toFixed(0)}.`);
-          }
-
           if (finalPnL > 0) {
-            try { confetti({ particleCount: 40, spread: 60 }); } catch (_) {}
+            soundEngine.playChime('profit');
+            try { confetti({ particleCount: 35, spread: 50 }); } catch (_) {}
+          } else {
+            soundEngine.playChime('sl');
           }
 
           const closedItem = {
@@ -185,7 +183,7 @@ export default function App() {
     });
   }, []);
 
-  // Real-time market tick generator
+  // Tick generator
   const tickMarket = useCallback(() => {
     setCandles((prevCandles) => {
       if (!prevCandles || prevCandles.length === 0) return prevCandles;
@@ -235,7 +233,6 @@ export default function App() {
     });
   }, [activeInstrument, ticksInCurrentCandle, checkPositionTriggers]);
 
-  // Tick timer
   useEffect(() => {
     if (!isPlaying) return;
     const intervalMs = Math.max(200, 1000 / tickSpeed);
@@ -245,12 +242,9 @@ export default function App() {
     return () => clearInterval(timer);
   }, [isPlaying, tickSpeed, tickMarket]);
 
-  // Execute trade
   const handleExecuteTrade = (trade) => {
     setActivePositions(prev => [trade, ...prev]);
-    if (voiceCoach.isEnabled) {
-      voiceCoach.speak(`Groww order placed. ${trade.side} ${trade.quantity} ${trade.name} at ${trade.entryPrice}. Stop Loss at ${trade.sl}.`);
-    }
+    soundEngine.playChime('setup');
   };
 
   const handleManualClosePosition = (positionId) => {
@@ -277,6 +271,7 @@ export default function App() {
       balance: acc.balance + finalPnL,
       realizedPnL: (acc.realizedPnL || 0) + finalPnL
     }));
+    soundEngine.playChime(finalPnL >= 0 ? 'profit' : 'sl');
   };
 
   const marketContext = {
@@ -295,7 +290,14 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#080d1a] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white font-sans">
+    <div className="min-h-screen bg-[#050811] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white font-sans antialiased">
+      {/* Top Global Ticker Tape */}
+      <TopMarketTicker
+        currentPrices={currentPrices}
+        activeInstrument={activeInstrument}
+      />
+
+      {/* Main Navigation */}
       <Navbar
         growwAccount={growwAccount}
         aiConfig={aiConfig}
@@ -305,10 +307,19 @@ export default function App() {
         onOpenSetupsHub={() => setIsSetupsHubOpen(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 space-y-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          {/* Left Column (8 Cols): Candlestick Chart & Positions */}
-          <div className="lg:col-span-8 space-y-4">
+      {/* Main Terminal Workspace */}
+      <main className="flex-1 max-w-7xl w-full mx-auto p-2.5 sm:p-4 space-y-3">
+        {/* Real-time Interactive Groww Authorisation Card */}
+        <RealTimeGrowwAuth
+          growwAccount={growwAccount}
+          onUpdateAccount={setGrowwAccount}
+          onOpenFullModal={() => setIsGrowwModalOpen(true)}
+        />
+
+        {/* Institutional 2-Column Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5">
+          {/* Left Column (8 Cols): Chart, Depth & Positions */}
+          <div className="lg:col-span-8 space-y-3.5">
             <ChartSection
               candles={candles}
               currentPrice={currentPrice}
@@ -325,6 +336,13 @@ export default function App() {
               onInspectCandle={handleInspectCandle}
             />
 
+            {/* Level 2 Order Book Depth */}
+            <MarketDepthTape
+              currentPrice={currentPrice}
+              activeInstrument={activeInstrument}
+            />
+
+            {/* Positions Table & Trade Journal */}
             <PositionsJournal
               activePositions={activePositions}
               closedTrades={closedTrades}
@@ -333,8 +351,19 @@ export default function App() {
             />
           </div>
 
-            {/* Right Column (4 Cols): AI Signal & Execution Terminal */}
-          <div className="lg:col-span-4 space-y-4">
+          {/* Right Column (4 Cols): AI Auto-Trader, Signal & Execution Terminal */}
+          <div className="lg:col-span-4 space-y-3.5">
+            {/* AI Pattern Scanner & Capital Compounding Engine */}
+            <AIPatternAutoTrader
+              candles={candles}
+              currentPrice={currentPrice}
+              activeInstrument={activeInstrument}
+              growwAccount={growwAccount}
+              onAutoExecuteTrade={handleExecuteTrade}
+              activePositions={activePositions}
+            />
+
+            {/* Live AI Setup Card */}
             <AIMentorPanel
               currentSetup={currentSetup}
               activeInstrument={activeInstrument}
@@ -343,6 +372,7 @@ export default function App() {
               onOpenSetupsHub={() => setIsSetupsHubOpen(true)}
             />
 
+            {/* Manual Order Execution Terminal */}
             <OrderExecutionPanel
               activeInstrument={activeInstrument}
               currentPrice={currentPrice}
@@ -352,6 +382,7 @@ export default function App() {
               onClearPresetOrder={() => setPresetOrder(null)}
             />
 
+            {/* AI Hinglish Live Chat Mentor */}
             <AIChatMentor
               marketContext={marketContext}
               aiConfig={aiConfig}
