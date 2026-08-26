@@ -6,7 +6,8 @@ export default function AIMentorPanel({
   currentSetup,
   activeInstrument,
   onApplySetupToOrder,
-  onOpenGyanLibrary
+  onOpenGyanLibrary,
+  onOpenSetupsHub
 }) {
   const [voiceEnabled, setVoiceEnabled] = useState(false);
 
@@ -43,7 +44,7 @@ export default function AIMentorPanel({
           </div>
           <div>
             <div className="flex items-center gap-1.5">
-              <h4 className="text-xs font-black text-white">Live AI Signal & Book Wisdom</h4>
+              <h4 className="text-xs font-black text-white">Live AI Signal & Setup</h4>
               <span className="animate-pulse w-2 h-2 rounded-full bg-emerald-400" />
             </div>
             <p className="text-[10px] text-slate-400">Real-Time Market Confluence Engine</p>
@@ -52,24 +53,20 @@ export default function AIMentorPanel({
 
         <div className="flex items-center gap-1.5">
           <button
-            onClick={toggleVoice}
-            className={`px-2.5 py-1 rounded-lg text-xs font-semibold border flex items-center gap-1.5 transition-all ${
-              voiceEnabled
-                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
-                : 'bg-[#162033] text-slate-400 border-[#243350] hover:text-white'
-            }`}
-            title="Toggle Live Audio Voice Commentary"
+            onClick={onOpenSetupsHub}
+            className="px-2 py-1 rounded-lg text-xs font-semibold bg-[#162033] hover:bg-[#202e48] text-emerald-400 border border-emerald-500/30 flex items-center gap-1 transition-colors"
+            title="Browse all 70%+ institutional setups"
           >
-            {voiceEnabled ? <Volume2 className="w-3.5 h-3.5 text-emerald-400" /> : <VolumeX className="w-3.5 h-3.5" />}
-            <span className="text-[11px]">{voiceEnabled ? "Voice ON" : "Voice"}</span>
+            <Target className="w-3.5 h-3.5" />
+            <span className="text-[11px]">Setups</span>
           </button>
 
           <button
             onClick={onOpenGyanLibrary}
-            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#162033] hover:bg-[#202e48] text-amber-400 border border-amber-500/30 flex items-center gap-1.5 transition-colors"
+            className="px-2 py-1 rounded-lg text-xs font-semibold bg-[#162033] hover:bg-[#202e48] text-amber-400 border border-amber-500/30 flex items-center gap-1 transition-colors"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span className="text-[11px]">All Books</span>
+            <span className="text-[11px]">Books</span>
           </button>
         </div>
       </div>
@@ -101,19 +98,19 @@ export default function AIMentorPanel({
         {/* Execution Metrics Grid */}
         <div className="grid grid-cols-4 gap-2 text-center bg-[#0d1322] p-2.5 rounded-xl border border-[#1e293b]">
           <div>
-            <span className="text-[10px] text-slate-400 block">Entry (₹)</span>
+            <span className="text-[10px] text-slate-400 block">Entry ({activeInstrument.currency || '₹'})</span>
             <span className="text-xs font-bold font-mono text-cyan-400">{currentSetup.entry}</span>
           </div>
           <div>
-            <span className="text-[10px] text-slate-400 block">Stop Loss (₹)</span>
+            <span className="text-[10px] text-slate-400 block">Stop Loss</span>
             <span className="text-xs font-bold font-mono text-rose-400">{currentSetup.sl}</span>
           </div>
           <div>
-            <span className="text-[10px] text-slate-400 block">Target 1 (₹)</span>
+            <span className="text-[10px] text-slate-400 block">Target 1</span>
             <span className="text-xs font-bold font-mono text-emerald-400">{currentSetup.tp1}</span>
           </div>
           <div>
-            <span className="text-[10px] text-slate-400 block">Target 2 (₹)</span>
+            <span className="text-[10px] text-slate-400 block">Target 2</span>
             <span className="text-xs font-bold font-mono text-emerald-300">{currentSetup.tp2}</span>
           </div>
         </div>

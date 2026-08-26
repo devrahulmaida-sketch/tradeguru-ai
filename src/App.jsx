@@ -9,6 +9,7 @@ import GrowwAuthModal from './components/GrowwAuthModal';
 import AIConfigModal from './components/AIConfigModal';
 import GyanLibraryModal from './components/GyanLibraryModal';
 import CandleInspectorModal from './components/CandleInspectorModal';
+import SetupsHubModal from './components/SetupsHubModal';
 
 import { INSTRUMENTS } from './data/marketSymbols';
 import { fetchLiveRealCandles, calculateIndicators, evaluateRealTimeTradeSetup, explainCandleInHinglish } from './services/marketData';
@@ -66,6 +67,7 @@ export default function App() {
   const [isGrowwModalOpen, setIsGrowwModalOpen] = useState(false);
   const [isAIConfigModalOpen, setIsAIConfigModalOpen] = useState(false);
   const [isGyanLibraryOpen, setIsGyanLibraryOpen] = useState(false);
+  const [isSetupsHubOpen, setIsSetupsHubOpen] = useState(false);
   const [isInspectorOpen, setIsInspectorOpen] = useState(false);
   const [inspectedCandleData, setInspectedCandleData] = useState(null);
   const [chatExternalPrompt, setChatExternalPrompt] = useState("");
@@ -300,6 +302,7 @@ export default function App() {
         onOpenGrowwModal={() => setIsGrowwModalOpen(true)}
         onOpenAIConfig={() => setIsAIConfigModalOpen(true)}
         onOpenGyanLibrary={() => setIsGyanLibraryOpen(true)}
+        onOpenSetupsHub={() => setIsSetupsHubOpen(true)}
       />
 
       <main className="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-4 space-y-4">
@@ -330,13 +333,14 @@ export default function App() {
             />
           </div>
 
-          {/* Right Column (4 Cols): AI Signal & Execution Terminal */}
+            {/* Right Column (4 Cols): AI Signal & Execution Terminal */}
           <div className="lg:col-span-4 space-y-4">
             <AIMentorPanel
               currentSetup={currentSetup}
               activeInstrument={activeInstrument}
               onApplySetupToOrder={(setup) => setPresetOrder(setup)}
               onOpenGyanLibrary={() => setIsGyanLibraryOpen(true)}
+              onOpenSetupsHub={() => setIsSetupsHubOpen(true)}
             />
 
             <OrderExecutionPanel
@@ -386,6 +390,17 @@ export default function App() {
         onClose={() => setIsInspectorOpen(false)}
         candleData={inspectedCandleData}
         onAskAIAboutCandle={(prompt) => {
+          setChatExternalPrompt(prompt);
+        }}
+      />
+
+      <SetupsHubModal
+        isOpen={isSetupsHubOpen}
+        onClose={() => setIsSetupsHubOpen(false)}
+        currentPrice={currentPrice}
+        symbolCurrency={activeInstrument.currency}
+        onApplySetupToOrder={(setup) => setPresetOrder(setup)}
+        onAskAIAboutSetup={(prompt) => {
           setChatExternalPrompt(prompt);
         }}
       />

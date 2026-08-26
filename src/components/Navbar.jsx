@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bot, BookOpen, Volume2, VolumeX, Shield, Wallet, Zap, Sparkles, TrendingUp, Key } from 'lucide-react';
+import { Bot, BookOpen, Volume2, VolumeX, Shield, Wallet, Zap, Sparkles, TrendingUp, Target } from 'lucide-react';
 import { voiceCoach } from '../services/voiceCoach';
 
 export default function Navbar({
@@ -7,7 +7,8 @@ export default function Navbar({
   aiConfig,
   onOpenGrowwModal,
   onOpenAIConfig,
-  onOpenGyanLibrary
+  onOpenGyanLibrary,
+  onOpenSetupsHub
 }) {
   const [time, setTime] = useState("");
   const [voiceOn, setVoiceOn] = useState(false);
@@ -32,7 +33,7 @@ export default function Navbar({
   return (
     <header className="bg-[#0c1220]/95 backdrop-blur-md border-b border-[#1f293d] sticky top-0 z-40 px-3 sm:px-4 py-2.5">
       <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2.5">
-        {/* Brand & Market Status */}
+        {/* Brand */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-500 via-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20 text-slate-950 font-black">
@@ -43,7 +44,7 @@ export default function Navbar({
                 <span className="text-base font-black tracking-tight text-white">TradeGuru</span>
                 <span className="text-base font-bold text-emerald-400">AI</span>
                 <span className="text-[10px] font-bold px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  REAL MARKET
+                  REAL PRO
                 </span>
               </div>
               <p className="text-[10px] text-slate-400 leading-none">
@@ -61,6 +62,15 @@ export default function Navbar({
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 flex-wrap">
+          {/* Pro Setups Hub Button */}
+          <button
+            onClick={onOpenSetupsHub}
+            className="px-2.5 py-1.5 rounded-xl bg-[#162033] hover:bg-[#202e48] text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm"
+          >
+            <Target className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="hidden sm:inline">Setups Hub (70%+)</span>
+          </button>
+
           {/* Quick Groq API Key Button */}
           <button
             onClick={onOpenAIConfig}
@@ -71,7 +81,7 @@ export default function Navbar({
             }`}
           >
             <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span>{hasGroqKey ? '⚡ Groq Key Active' : '⚡ Paste Groq API Key'}</span>
+            <span>{hasGroqKey ? '⚡ Groq Active' : '⚡ Paste Groq Key'}</span>
           </button>
 
           {/* Voice Coach Toggle */}
